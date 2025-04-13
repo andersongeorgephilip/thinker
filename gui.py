@@ -9,6 +9,7 @@ from config import ensure_folders_exist, WP_CONFIG_FILE, IMAGE_FOLDER
 from ai_services import AIServices
 from wordpress import WordPressClient
 
+
 class ArticleApp:
     def __init__(self, root):
         self.root = root
@@ -17,6 +18,7 @@ class ArticleApp:
         self.current_image = None
         self.categories = []  # All categories fetched from WordPress
         self.category_vars = {}  # Checkbutton variables for selected categories
+        self.status_var = tk.StringVar()  # Status bar variable
         ensure_folders_exist()
         self.initialize_components()
         self.load_categories()
@@ -30,6 +32,7 @@ class ArticleApp:
 
     # --- Core GUI Components ---
     def setup_gui(self):
+        """Set up the main GUI components"""
         self.root.title("Article Generator")
         self.root.geometry("800x600")
         
@@ -48,23 +51,27 @@ class ArticleApp:
         self.output_text = scrolledtext.ScrolledText(main_frame, wrap=tk.WORD)
         self.output_text.pack(fill=tk.BOTH, expand=True)
         
-        # Category Section
+        # Category Section (Add below Output Section)
         category_frame = tk.LabelFrame(main_frame, text="Select Categories")
         category_frame.pack(fill=tk.BOTH, padx=10, pady=5)
+        
         self.category_canvas = tk.Canvas(category_frame)
-        self.category_scrollbar = ttk.Scrollbar(category_frame, orient=tk.VERTICAL, command=self.category_canvas.yview)
+        self.category_scrollbar = ttk.Scrollbar(
+            category_frame, orient=tk.VERTICAL, command=self.category_canvas.yview
+        )
         self.category_inner_frame = tk.Frame(self.category_canvas)
-
+        
         self.category_inner_frame.bind(
             "<Configure>",
             lambda e: self.category_canvas.configure(scrollregion=self.category_canvas.bbox("all")),
         )
-
+        
         self.category_canvas.create_window((0, 0), window=self.category_inner_frame, anchor="nw")
         self.category_canvas.configure(yscrollcommand=self.category_scrollbar.set)
+        
         self.category_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.category_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        
+
         # Bottom Buttons
         button_frame = tk.Frame(main_frame)
         button_frame.pack(fill=tk.X, pady=5)
@@ -72,6 +79,16 @@ class ArticleApp:
         tk.Button(button_frame, text="Generate", command=self.generate).pack(side=tk.LEFT, padx=5)
         tk.Button(button_frame, text="Post to WordPress", command=self.post_to_wordpress).pack(side=tk.LEFT, padx=5)
         tk.Button(button_frame, text="Clear", command=self.clear).pack(side=tk.LEFT, padx=5)
+
+    def create_status_bar(self):
+        """Create status bar at bottom of window"""
+        status_bar = tk.Label(self.root, 
+                              textvariable=self.status_var,
+                              bd=1, 
+                              relief=tk.SUNKEN, 
+                              anchor=tk.W)
+        status_bar.pack(side=tk.BOTTOM, fill=tk.X)
+        self.status_var.set("Ready")
 
     # --- Date/Time Picker ---
     def add_publish_date_controls(self):
@@ -84,10 +101,10 @@ class ArticleApp:
         self.publish_date.pack(side=tk.LEFT, padx=5)
         
         tk.Label(date_frame, text="Time:").pack(side=tk.LEFT)
-        self.publish_time = tk.Spinbox(date_frame, 
-                                     values=[f"{h:02d}:{m:02d}" 
-                                             for h in range(24) 
-                                             for m in [0, 15, 30, 45]])
+        self.publish_time = tk.Spinbox(
+            date_frame, 
+            values=[f"{h:02d}:{m:02d}" for h in range(24) for m in [0, 15, 30, 45]]
+        )
         self.publish_time.pack(side=tk.LEFT)
         
         tk.Label(date_frame, text="(Server Timezone)").pack(side=tk.LEFT, padx=5)
@@ -111,33 +128,31 @@ class ArticleApp:
 
     # --- Core Functionality ---
     def load_categories(self):
-        """Load categories from WordPress and populate the Checkbuttons"""
+        """Load categories from WordPress"""
         try:
-            self.update_status("Fetching categories...")
-            categories = []
-            page = 1
-            while True:
-                response = self.wp_client.get_categories(page=page)
-                if not response:
-                    break
-                categories.extend(response)
-                page += 1
-
-            self.categories = categories
+            self.update_status("Loading categories...")
+            self.categories = self.wp_client.get_categories()
+            
+            # Clear existing checkboxes
             for widget in self.category_inner_frame.winfo_children():
                 widget.destroy()
-            self.category_vars.clear()
-
-            for category in categories:
+            
+            # Create new checkboxes
+            self.category_vars = {}
+            for category in self.categories:
                 var = tk.BooleanVar()
+                cb = tk.Checkbutton(
+                    self.category_inner_frame, 
+                    text=category['name'], 
+                    variable=var
+                )
+                cb.pack(anchor="w")
                 self.category_vars[category['id']] = var
-                cb = tk.Checkbutton(self.category_inner_frame, text=category['name'], variable=var)
-                cb.pack(anchor="w", padx=5, pady=2)
-
+                
             self.update_status("Categories loaded")
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to fetch categories: {e}")
-            self.update_status("Error occurred")
+            messagebox.showerror("Category Error", f"Failed to load categories: {str(e)}")
+            self.update_status("Category load failed")
 
     def generate(self):
         """Generate article and image using AI"""
@@ -180,7 +195,9 @@ class ArticleApp:
             content_body = lines[1].strip() if len(lines) > 1 else article_content
 
             # Get selected categories
-            selected_categories = [cat_id for cat_id, var in self.category_vars.items() if var.get()]
+            selected_categories = [
+                cat_id for cat_id, var in self.category_vars.items() if var.get()
+            ]
 
             self.update_status("Posting to WordPress...")
             publish_date = self.publish_date.get_date()
