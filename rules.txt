@@ -1,0 +1,31 @@
+Rule Compliance: 
+
+Title should be about 35 characters 
+
+Select a 1-4 word phrase that accurately describes the main topic, matches clear search intent, and naturally integrates multiple times throughout your content Place this on the second line just below the title
+
+Force the article this key phrase but Key phrase can only be used a maximum of 5 times 
+
+
+Each sentence should have less than 20 words 
+
+Each paragraph should have less than 150 words 
+
+Written in active voice 
+
+The article should be a minimum of 380 words and less than 450 
+
+At least 30% of sentences with a transition word 
+
+Less than 10% of sentences in passive voice 
+
+Use key phrases in subheadings 
+
+Subheading needs to be on a new line 
+
+Meta description needs to be over 120 and not over 156 
+
+Meta description need to contain the key phrase 
+
+Sources at the bottom with link to each 
+
