@@ -1,8 +1,7 @@
-# main.py
-import tkinter as tk
+from tkinter import Tk
 from gui import ArticleApp
 
 if __name__ == "__main__":
-    root = tk.Tk()
+    root = Tk()
     app = ArticleApp(root)
     root.mainloop()

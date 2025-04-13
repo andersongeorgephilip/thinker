@@ -71,3 +71,10 @@ class WordPressClient:
         
         response.raise_for_status()
         return response.json()
+
+    def get_categories(self):
+        """Fetch categories from WordPress"""
+        url = f"{self.wp_url}/wp-json/wp/v2/categories"
+        response = requests.get(url, auth=self.auth)
+        response.raise_for_status()
+        return response.json()
