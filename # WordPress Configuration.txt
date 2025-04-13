@@ -1,0 +1,4 @@
+# WordPress Configuration
+WORDPRESS_URL=https://domainname.com
+WORDPRESS_USERNAME=Email@address.com
+WORDPRESS_PASSWORD=password
