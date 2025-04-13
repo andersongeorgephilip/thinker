@@ -23,6 +23,11 @@ class ArticleApp:
         self.initialize_components()
         self.load_categories()
 
+    def update_status(self, message):
+        """Update the status bar text"""
+        self.status_var.set(message)
+        self.root.update_idletasks()  # Ensure UI updates immediately
+
     def initialize_components(self):
         """Initialize all UI components in proper order"""
         self.create_menu()  # Ensure this is called
