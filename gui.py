@@ -26,11 +26,11 @@ class ArticleApp:
     def update_status(self, message):
         """Update the status bar text"""
         self.status_var.set(message)
-        self.root.update_idletasks()  # Ensure UI updates immediately
+        self.root.update_idletasks()
 
     def initialize_components(self):
         """Initialize all UI components in proper order"""
-        self.create_menu()  # Ensure this is called
+        self.create_menu()
         self.setup_gui()
         self.create_status_bar()
         self.add_publish_date_controls()
@@ -40,57 +40,57 @@ class ArticleApp:
         """Set up the main GUI components"""
         self.root.title("Article Generator")
         self.root.geometry("800x600")
-        
+
         main_frame = tk.Frame(self.root)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        
+
         # Input Section
         input_frame = tk.Frame(main_frame)
         input_frame.pack(fill=tk.X, pady=5)
-        
+
         tk.Label(input_frame, text="Enter Prompt:").pack(side=tk.LEFT)
         self.prompt_entry = tk.Entry(input_frame, width=50)
         self.prompt_entry.pack(side=tk.LEFT, padx=5)
-        
+
         # Output Section
         self.output_text = scrolledtext.ScrolledText(main_frame, wrap=tk.WORD)
         self.output_text.pack(fill=tk.BOTH, expand=True)
-        
-        # Category Section (Add below Output Section)
+
+        # Category Section
         category_frame = tk.LabelFrame(main_frame, text="Select Categories")
         category_frame.pack(fill=tk.BOTH, padx=10, pady=5)
-        
+
         self.category_canvas = tk.Canvas(category_frame)
         self.category_scrollbar = ttk.Scrollbar(
             category_frame, orient=tk.VERTICAL, command=self.category_canvas.yview
         )
         self.category_inner_frame = tk.Frame(self.category_canvas)
-        
+
         self.category_inner_frame.bind(
             "<Configure>",
             lambda e: self.category_canvas.configure(scrollregion=self.category_canvas.bbox("all")),
         )
-        
+
         self.category_canvas.create_window((0, 0), window=self.category_inner_frame, anchor="nw")
         self.category_canvas.configure(yscrollcommand=self.category_scrollbar.set)
-        
+
         self.category_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.category_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
         # Bottom Buttons
         button_frame = tk.Frame(main_frame)
         button_frame.pack(fill=tk.X, pady=5)
-        
+
         tk.Button(button_frame, text="Generate", command=self.generate).pack(side=tk.LEFT, padx=5)
         tk.Button(button_frame, text="Post to WordPress", command=self.post_to_wordpress).pack(side=tk.LEFT, padx=5)
         tk.Button(button_frame, text="Clear", command=self.clear).pack(side=tk.LEFT, padx=5)
 
     def create_status_bar(self):
         """Create status bar at bottom of window"""
-        status_bar = tk.Label(self.root, 
+        status_bar = tk.Label(self.root,
                               textvariable=self.status_var,
-                              bd=1, 
-                              relief=tk.SUNKEN, 
+                              bd=1,
+                              relief=tk.SUNKEN,
                               anchor=tk.W)
         status_bar.pack(side=tk.BOTTOM, fill=tk.X)
         self.status_var.set("Ready")
@@ -100,35 +100,35 @@ class ArticleApp:
         """Add datetime picker to GUI"""
         date_frame = tk.Frame(self.root)
         date_frame.pack(pady=5)
-        
+
         tk.Label(date_frame, text="Publish Date:").pack(side=tk.LEFT)
         self.publish_date = DateEntry(date_frame)
         self.publish_date.pack(side=tk.LEFT, padx=5)
-        
+
         tk.Label(date_frame, text="Time:").pack(side=tk.LEFT)
         self.publish_time = tk.Spinbox(
-            date_frame, 
+            date_frame,
             values=[f"{h:02d}:{m:02d}" for h in range(24) for m in [0, 15, 30, 45]]
         )
         self.publish_time.pack(side=tk.LEFT)
-        
+
         tk.Label(date_frame, text="(Server Timezone)").pack(side=tk.LEFT, padx=5)
 
     def create_menu(self):
         """Create menu bar"""
         menubar = tk.Menu(self.root)
-        
+
         # File Menu
         file_menu = tk.Menu(menubar, tearoff=0)
         file_menu.add_command(label="Exit", command=self.root.quit)
         menubar.add_cascade(label="File", menu=file_menu)
-        
+
         # Settings Menu
         settings_menu = tk.Menu(menubar, tearoff=0)
         settings_menu.add_command(label="API Key", command=self.set_api_key)
         settings_menu.add_command(label="WordPress Config", command=self.configure_wordpress)
         menubar.add_cascade(label="Settings", menu=settings_menu)
-        
+
         self.root.config(menu=menubar)
 
     # --- Core Functionality ---
@@ -137,23 +137,23 @@ class ArticleApp:
         try:
             self.update_status("Loading categories...")
             self.categories = self.wp_client.get_categories()
-            
+
             # Clear existing checkboxes
             for widget in self.category_inner_frame.winfo_children():
                 widget.destroy()
-            
+
             # Create new checkboxes
             self.category_vars = {}
             for category in self.categories:
                 var = tk.BooleanVar()
                 cb = tk.Checkbutton(
-                    self.category_inner_frame, 
-                    text=category['name'], 
+                    self.category_inner_frame,
+                    text=category['name'],
                     variable=var
                 )
                 cb.pack(anchor="w")
                 self.category_vars[category['id']] = var
-                
+
             self.update_status("Categories loaded")
         except Exception as e:
             messagebox.showerror("Category Error", f"Failed to load categories: {str(e)}")
@@ -237,15 +237,15 @@ class ArticleApp:
     def set_api_key(self):
         """Set or update the OpenAI API key"""
         key_file = "openai_api_key.txt"
-        
+
         if os.path.exists(key_file):
             with open(key_file, "r") as file:
                 current_key = file.read().strip()
         else:
             current_key = ""
-        
+
         new_key = simpledialog.askstring("Set API Key", "Enter your OpenAI API Key:", initialvalue=current_key)
-        
+
         if new_key:
             with open(key_file, "w") as file:
                 file.write(new_key)
@@ -256,3 +256,15 @@ class ArticleApp:
     def configure_wordpress(self):
         """Placeholder for WordPress configuration"""
         messagebox.showinfo("WordPress Config", "WordPress configuration not yet implemented.")
+
+    def display_image(self):
+        """Display generated image (implementation missing in original code)"""
+        # Add your image display logic here
+        pass
+
+
+# Main execution block
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = ArticleApp(root)
+    root.mainloop()
