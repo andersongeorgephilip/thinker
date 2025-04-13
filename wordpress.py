@@ -72,9 +72,25 @@ class WordPressClient:
         response.raise_for_status()
         return response.json()
 
-    def get_categories(self):
-        """Fetch categories from WordPress"""
-        url = f"{self.wp_url}/wp-json/wp/v2/categories"
+def get_categories(self):
+    """Fetch ALL categories from WordPress with pagination handling"""
+    categories = []
+    page = 1
+    while True:
+        url = f"{self.wp_url}/wp-json/wp/v2/categories?per_page=100&page={page}"
         response = requests.get(url, auth=self.auth)
         response.raise_for_status()
-        return response.json()
+        
+        # Add current page categories
+        categories.extend(response.json())
+        
+        # Check if there are more pages
+        if 'X-WP-TotalPages' not in response.headers:
+            break
+            
+        total_pages = int(response.headers['X-WP-TotalPages'])
+        if page >= total_pages:
+            break
+        page += 1
+        
+    return categories
